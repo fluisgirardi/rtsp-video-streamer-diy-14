@@ -22,6 +22,7 @@ public:
     void run(void);
     size_t getSize(void);
     uint8_t *getfb(void);
+    uint8_t *getfbAndSize(size_t *fbSize);
     int getWidth(void);
     int getHeight(void);
     framesize_t getFrameSize(void);

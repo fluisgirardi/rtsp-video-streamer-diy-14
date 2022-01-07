@@ -69,43 +69,26 @@ IPAddress apIP = IPAddress(192, 168, 1, 1);
 #endif
 
 #ifdef ENABLE_WEBSERVER
-void handle_jpg_stream(void)
-{
-    WiFiClient client = server.client();
-    String response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n";
-    server.sendContent(response);
-
-    while (1)
-    {
-        cam.run();
-        if (!client.connected())
-            break;
-        response = "--frame\r\n";
-        response += "Content-Type: image/jpeg\r\n\r\n";
-        server.sendContent(response);
-
-        client.write((char *)cam.getfb(), cam.getSize());
-        server.sendContent("\r\n");
-        if (!client.connected())
-            break;
-    }
-}
-
 void handle_jpg(void)
 {
     WiFiClient client = server.client();
 
-    cam.run();
     if (!client.connected())
     {
         return;
     }
-    String response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-disposition: inline; filename=capture.jpg\r\n";
-    response += "Content-type: image/jpeg\r\n\r\n";
-    server.sendContent(response);
-    client.write((char *)cam.getfb(), cam.getSize());
+
+    if (capture_jpg==NULL)
+    {
+      String response = "HTTP/1.1 503 Service Unavailable\r\n";
+      server.sendContent(response); 
+    }
+    else
+    {
+      String response = "HTTP/1.1 200 OK\r\nContent-disposition: inline; filename=capture.jpg\r\nContent-type: image/jpeg\r\n\r\n";
+      server.sendContent(response);
+      client.write((char *)capture_jpg, capture_jpg_len);
+    }
 }
 
 void handleNotFound()
@@ -171,7 +154,7 @@ void setup()
     config.pixel_format = PIXFORMAT_JPEG;
     config.frame_size = FRAMESIZE_SVGA;
     config.jpeg_quality = 12; 
-    config.fb_count = 2;       
+    config.fb_count = 1;       
   
     #if defined(CAMERA_MODEL_ESP_EYE)
       pinMode(13, INPUT_PULLUP);
@@ -230,7 +213,6 @@ void setup()
     lcdMessage(ip.toString());
 
 #ifdef ENABLE_WEBSERVER
-    server.on("/", HTTP_GET, handle_jpg_stream);
     server.on("/jpg", HTTP_GET, handle_jpg);
     server.onNotFound(handleNotFound);
     server.begin();
@@ -247,6 +229,9 @@ WiFiClient client; // FIXME, support multiple clients
 
 void loop()
 {
+    cam.run();
+    capture_jpg = cam.getfbAndSize(&capture_jpg_len);
+
 #ifdef ENABLE_WEBSERVER
     server.handleClient();
 #endif
@@ -283,8 +268,7 @@ void loop()
         client = rtspServer.accept();
 
         if(client) {
-            //streamer = new SimStreamer(&client, true);             // our streamer for UDP/TCP based RTP transport
-            streamer = new OV2640Streamer(&client, cam);             // our streamer for UDP/TCP based RTP transport
+            streamer = new SimStreamer(&client, true);             // our streamer for UDP/TCP based RTP transport
 
             session = new CRtspSession(&client, streamer); // our threads RTSP session and state
         }
