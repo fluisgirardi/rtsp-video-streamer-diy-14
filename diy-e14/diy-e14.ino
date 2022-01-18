@@ -52,6 +52,7 @@ bool hasDisplay; // we probe for the device at runtime
 #include "camera_pins.h"
 
 OV2640 cam;
+uint32_t previousMillis = 0;
 
 #ifdef ENABLE_WEBSERVER
 WebServer server(80);
@@ -201,6 +202,7 @@ void setup()
         delay(500);
         Serial.print(F("."));
     }
+    previousMillis = millis();
     ip = WiFi.localIP();
     Serial.println(F("WiFi connected"));
     Serial.println("");
@@ -227,7 +229,6 @@ CStreamer *streamer;
 CRtspSession *session;
 WiFiClient client; // FIXME, support multiple clients
 
-uint32_t previousMillis = millis();
 const uint32_t interval = 10000;
 
 void loop()
