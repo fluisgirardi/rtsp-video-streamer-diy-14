@@ -227,8 +227,22 @@ CStreamer *streamer;
 CRtspSession *session;
 WiFiClient client; // FIXME, support multiple clients
 
+uint32_t previousMillis = millis();
+const uint32_t interval = 10000;
+
 void loop()
 {
+    static uint32_t currentMillis = millis();
+
+    // if WiFi is down, try reconnecting
+    if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+      Serial.print(millis());
+      Serial.println("Reconnecting to WiFi...");
+      WiFi.disconnect();
+      WiFi.reconnect();
+      previousMillis = currentMillis;
+    }
+      
     cam.run();
     capture_jpg = cam.getfbAndSize(&capture_jpg_len);
 
